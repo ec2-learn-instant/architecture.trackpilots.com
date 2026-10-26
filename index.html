@@ -65,6 +65,10 @@
     stroke-width: 3;
   }
 
+  /* Offline tags on desktop-related nodes, shown only in the offline phase */
+  .offline-tag { font-size: 10px; font-weight: 700; fill: #f87171; text-anchor: end; opacity: 0; transition: opacity 0.4s ease; }
+  [data-phase="offline"] .offline-tag { opacity: 1; }
+
   /* Status dots on each node */
   .dot { fill: #60a5fa; transition: fill 0.4s ease; }
   [data-phase="online"] .dot { fill: #22c55e; }
@@ -124,6 +128,12 @@
     <marker id="ah-site" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" fill="#c084fc"/>
     </marker>
+    <marker id="ah-web-both" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e2e8f0"/>
+    </marker>
+    <marker id="ah-grey-both" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
     <marker id="ah-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
     </marker>
@@ -147,7 +157,7 @@
 
   <!-- Routing lines -->
   <g class="chain">
-    <path id="p-desk-api" d="M346 428 L522 428" stroke="#10b981" marker-end="url(#ah-green)"/>
+    <path id="p-desk-api" d="M291 628 L440 628 L440 428 L522 428" stroke="#10b981" marker-end="url(#ah-green)"/>
     <path id="p-api-rmq" d="M750 428 L930 428" stroke="#f59e0b" marker-end="url(#ah-orange)"/>
     <path id="p-rmq-track" d="M1156 428 C1250 428 1250 180 1336 180" stroke="#a78bfa" marker-end="url(#ah-purple)"/>
     <path id="p-rmq-act" d="M1156 428 C1250 428 1250 345 1336 345" stroke="#f87171" marker-end="url(#ah-red)"/>
@@ -188,6 +198,8 @@
     <text class="name" x="231" y="627" font-size="16">Local DB</text>
     <text class="host" x="231" y="646" font-size="12">SQLite</text>
   </g>
+  <text class="label" x="120" y="684" style="text-anchor: start">Online: store locally, then emit to cloud</text>
+  <text class="label" x="120" y="702" style="text-anchor: start">Offline: store locally, skip cloud emit</text>
 
   <!-- API Server -->
   <g>
@@ -205,7 +217,8 @@
     <g class="svc">
       <rect x="932" y="376" width="224" height="104" rx="14" fill="#2e2412" stroke="#f59e0b" stroke-width="4"/>
       <text class="name" x="1044" y="420">RabbitMQ</text>
-      <text class="host" x="1044" y="454">Message Broker</text>
+      <text class="host" x="1044" y="454">rabbitmq.trackpilots.com</text>
+    <text class="label" x="1044" y="506" style="text-anchor: middle">Message Queue</text>
     </g>
   </g>
 
@@ -254,7 +267,8 @@
     <rect x="1640" y="140" width="110" height="560" rx="16" fill="#1a1d3a" stroke="#818cf8" stroke-width="4"/>
     <text class="db" x="1695" y="396">Central</text>
     <text class="db" x="1695" y="428">Database</text>
-    <text class="host" x="1695" y="464">PostgreSQL</text>
+    <text class="host" x="1695" y="462">PostgreSQL</text>
+    <text class="host" x="1695" y="478">+ TimescaleDB</text>
   </g>
 
   <!-- Backups: stacked under the central database; pushes to S3 -->
@@ -271,33 +285,37 @@
     <text class="host" x="1675" y="880" style="font-size: 10px">backup bucket</text>
   </g>
 
+  <!-- Web Browser to the public website: two-way -->
+  <path d="M346 965 L470 965" stroke="#94a3b8" stroke-width="3" fill="none" marker-start="url(#ah-grey-both)" marker-end="url(#ah-grey-both)"/>
+
   <!-- Public website lead form -> GraphQL API (createOrganisationRequest) -->
-  <path d="M116 725 L95 725 L95 905 L1040 905 L1040 880" stroke="#c084fc" stroke-width="3" fill="none" marker-end="url(#ah-site)"/>
-  <text class="label" x="380" y="897" style="text-anchor: start">lead form</text>
+  <path d="M650 945 L1000 945 L1000 880" stroke="#c084fc" stroke-width="3" fill="none" marker-end="url(#ah-site)"/>
+  <text class="label" x="825" y="936" style="text-anchor: middle">lead form</text>
   <g>
-    <rect x="116" y="690" width="240" height="70" rx="14" fill="#1e1a2e" stroke="#c084fc" stroke-width="4"/>
-    <text class="name" x="236" y="718" style="font-size: 18px">Website</text>
-    <text class="host" x="236" y="740">trackpilots.com</text>
+    <rect x="470" y="915" width="180" height="60" rx="14" fill="#1e1a2e" stroke="#c084fc" stroke-width="4"/>
+    <text class="name" x="560" y="940" style="font-size: 16px">Website</text>
+    <text class="host" x="560" y="960">trackpilots.com</text>
   </g>
 
   <!-- Web row: browser -> web app -> GraphQL API -> PostgreSQL -->
   <g class="web">
-    <path id="p-web-app" d="M346 945 L440 945 L440 832 L522 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
-    <path id="p-web-gql" d="M752 832 L930 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
-    <path id="p-web-db" d="M1156 832 L1585 832 L1585 690 L1640 690" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
+    <path id="p-web-app" d="M346 945 L440 945 L440 832 L522 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-start="url(#ah-web-both)" marker-end="url(#ah-web-both)"/>
+    <path id="p-web-gql" d="M752 832 L930 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-start="url(#ah-web-both)" marker-end="url(#ah-web-both)"/>
+    <path id="p-web-db" d="M1156 832 L1585 832 L1585 690 L1640 690" stroke="#e2e8f0" stroke-width="3" fill="none" marker-start="url(#ah-web-both)" marker-end="url(#ah-web-both)"/>
   </g>
   <text class="label" x="880" y="766">GraphQL requests (request / response)</text>
 
   <g>
-    <rect x="116" y="915" width="230" height="60" rx="14" fill="#1e2632" stroke="#94a3b8" stroke-width="4"/>
-    <text class="name" x="231" y="942" style="font-size: 18px">Web Browser</text>
-    <text class="host" x="231" y="962">Admin/Manager/Employee</text>
+    <rect x="96" y="855" width="250" height="120" rx="14" fill="#1e2632" stroke="#94a3b8" stroke-width="4"/>
+    <text class="name" x="221" y="902" style="font-size: 20px">Web Browser /</text>
+    <text class="name" x="221" y="934" style="font-size: 20px">Mobile App</text>
   </g>
 
   <g>
     <rect x="524" y="784" width="228" height="96" rx="14" fill="#0c2233" stroke="#38bdf8" stroke-width="4"/>
-    <text class="name" x="638" y="826">Web App</text>
-    <text class="host" x="638" y="856">app.trackpilots.com</text>
+    <text class="name" x="638" y="824">Web App</text>
+    <text class="host" x="638" y="846">app.trackpilots.com</text>
+    <text class="host" x="638" y="866">Admin/Manager/Employee</text>
   </g>
 
   <g>
@@ -377,6 +395,15 @@
     <text class="label" x="1000" y="110" style="text-anchor: start">webhook ID check</text>
   </g>
 
+
+  <!-- Offline tags: desktop-related nodes -->
+  <text class="offline-tag" x="334" y="468">offline</text>
+  <text class="offline-tag" x="748" y="468">offline</text>
+  <text class="offline-tag" x="1560" y="224">offline</text>
+  <text class="offline-tag" x="1560" y="389">offline</text>
+  <text class="offline-tag" x="1560" y="555">offline</text>
+  <text class="offline-tag" x="1560" y="720">offline</text>
+  <text class="offline-tag" x="291" y="594">offline</text>
 
   <!-- Moving packets are drawn here, on top of everything -->
   <g id="packets"></g>
