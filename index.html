@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TrackPilots Data Architecture Flow</title>
+<style>
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #0d1117;
+  }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  svg {
+    width: 100%;
+    max-width: 1760px;
+    height: auto;
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  .title { fill: #ffffff; font-size: 40px; font-weight: 700; text-anchor: middle; }
+  .subtitle { fill: #8b949e; font-size: 20px; text-anchor: middle; }
+  .label { fill: #8b949e; font-size: 16px; text-anchor: middle; }
+  .name { fill: #ffffff; font-size: 26px; font-weight: 700; text-anchor: middle; }
+  .host { fill: #94a3b8; font-size: 14px; text-anchor: middle; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .chip { fill: #0d1117; font-size: 17px; font-weight: 700; text-anchor: middle; }
+  .db { fill: #e5e7eb; font-size: 20px; font-weight: 700; text-anchor: middle; }
+  .legend { fill: #c9d1d9; font-size: 20px; }
+
+  .svc { transition: opacity 0.5s ease; }
+  [data-phase="offline"] .svc { opacity: 0.45; }
+
+  #desk { transition: stroke 0.4s ease; }
+  [data-phase="offline"] #desk { stroke: #ef4444; }
+
+  /* Event routing lines */
+  .chain path {
+    fill: none;
+    stroke-width: 4;
+    opacity: 0.35;
+    transition: opacity 0.5s ease;
+  }
+  [data-phase="online"] .chain path { opacity: 1; }
+  [data-phase="offline"] .chain path { opacity: 0.12; }
+
+  /* Health check arc (always faintly visible) */
+  .health {
+    fill: none;
+    stroke: #334155;
+    stroke-width: 3;
+    stroke-dasharray: 8 10;
+  }
+
+  /* Local storage path, only used while offline */
+  .local {
+    fill: none;
+    stroke: #94a3b8;
+    stroke-width: 3;
+  }
+
+  /* Status dots on each node */
+  .dot { fill: #60a5fa; transition: fill 0.4s ease; }
+  [data-phase="online"] .dot { fill: #22c55e; }
+  [data-phase="offline"] .dot { fill: #ef4444; }
+
+  /* Status banner */
+  #status rect { fill: #3b82f6; transition: fill 0.4s ease; }
+  [data-phase="online"] #status rect { fill: #22c55e; }
+  [data-phase="offline"] #status rect { fill: #ef4444; }
+  .st { opacity: 0; transition: opacity 0.3s ease; fill: #ffffff; font-size: 22px; font-weight: 700; text-anchor: middle; }
+  [data-phase="check"] .st-check,
+  [data-phase="online"] .st-online,
+  [data-phase="offline"] .st-offline { opacity: 1; }
+</style>
+</head>
+<body>
+
+<svg id="diagram" data-phase="check" viewBox="0 0 1760 990" role="img" aria-label="TrackPilots data architecture flow">
+  <defs>
+    <pattern id="grid" width="110" height="110" patternUnits="userSpaceOnUse">
+      <path d="M110 0 H0 V110" fill="none" stroke="#ffffff" stroke-opacity="0.03"/>
+    </pattern>
+
+    <marker id="ah-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#10b981"/>
+    </marker>
+    <marker id="ah-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="ah-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#a78bfa"/>
+    </marker>
+    <marker id="ah-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f87171"/>
+    </marker>
+    <marker id="ah-cyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#22d3ee"/>
+    </marker>
+    <marker id="ah-web" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e2e8f0"/>
+    </marker>
+    <marker id="ah-icons" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#84cc16"/>
+    </marker>
+    <marker id="ah-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect width="1760" height="990" fill="#0d1117"/>
+  <rect width="1760" height="990" fill="url(#grid)"/>
+
+  <!-- Titles -->
+  <text class="title" x="880" y="70">TrackPilots  ·  Data Architecture Flow</text>
+  <text class="subtitle" x="880" y="118">Desktop App  →  WS Health Check  →  Online: Pipeline / Offline: Local DB</text>
+
+  <!-- Routing lines -->
+  <g class="chain">
+    <path id="p-desk-api" d="M346 428 L522 428" stroke="#10b981" marker-end="url(#ah-green)"/>
+    <path id="p-api-rmq" d="M750 428 L930 428" stroke="#f59e0b" marker-end="url(#ah-orange)"/>
+    <path id="p-rmq-track" d="M1156 428 C1250 428 1250 180 1336 180" stroke="#a78bfa" marker-end="url(#ah-purple)"/>
+    <path id="p-rmq-act" d="M1156 428 C1250 428 1250 345 1336 345" stroke="#f87171" marker-end="url(#ah-red)"/>
+    <path id="p-rmq-shot" d="M1156 428 C1250 428 1250 511 1336 511" stroke="#22d3ee" marker-end="url(#ah-cyan)"/>
+    <path id="p-track-db" d="M1564 180 L1640 180" stroke="#94a3b8" marker-end="url(#ah-grey)"/>
+    <path id="p-act-db" d="M1564 345 L1640 345" stroke="#94a3b8" marker-end="url(#ah-grey)"/>
+    <path id="p-rmq-icons" d="M1156 428 C1250 428 1250 676 1336 676" stroke="#84cc16" marker-end="url(#ah-icons)"/>
+    <path id="p-icons-db" d="M1564 676 L1640 676" stroke="#94a3b8" marker-end="url(#ah-grey)"/>
+    <path id="p-shot-db" d="M1564 511 L1640 511" stroke="#94a3b8" marker-end="url(#ah-grey)"/>
+  </g>
+
+  <!-- WebSocket health check arc -->
+  <path id="p-health" class="health" d="M290 376 Q431 262 572 376"/>
+  <text class="label" x="431" y="300">WebSocket health check</text>
+
+  <!-- Offline path to local storage -->
+  <path id="p-desk-local" class="local" d="M231 480 L231 598" marker-end="url(#ah-grey)"/>
+
+  <!-- Employee -->
+  <g>
+    <rect x="116" y="150" width="230" height="96" rx="14" fill="#1e2632" stroke="#94a3b8" stroke-width="4"/>
+    <text class="name" x="231" y="192">Employee</text>
+    <text class="host" x="231" y="222">Employee Machine</text>
+  </g>
+  <path d="M231 248 L231 374" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#ah-grey)"/>
+
+  <!-- Desktop App -->
+  <g>
+    <rect id="desk" x="116" y="376" width="230" height="104" rx="14" fill="#13213b" stroke="#3b82f6" stroke-width="4"/>
+    <text class="name" x="231" y="420">Desktop App</text>
+    <text class="host" x="231" y="454">electron.trackpilots.com</text>
+    <circle class="dot" cx="334" cy="388" r="9"/>
+  </g>
+
+  <!-- Local storage -->
+  <g>
+    <rect x="171" y="600" width="120" height="56" rx="8" fill="#1f2937" stroke="#cbd5e1" stroke-width="3"/>
+    <text class="name" x="231" y="627" font-size="16">Local DB</text>
+    <text class="host" x="231" y="646" font-size="12">SQLite</text>
+  </g>
+
+  <!-- API Server -->
+  <g>
+    <g class="svc">
+      <rect x="524" y="376" width="228" height="104" rx="14" fill="#0f2a22" stroke="#10b981" stroke-width="4"/>
+      <text class="name" x="638" y="420">API Server</text>
+      <text class="host" x="638" y="454">desktop.trackpilots.com</text>
+      <circle class="dot" cx="740" cy="388" r="9"/>
+    </g>
+    <text class="label" x="638" y="508">4 event types emitted</text>
+  </g>
+
+  <!-- RabbitMQ -->
+  <g>
+    <g class="svc">
+      <rect x="932" y="376" width="224" height="104" rx="14" fill="#2e2412" stroke="#f59e0b" stroke-width="4"/>
+      <text class="name" x="1044" y="420">RabbitMQ</text>
+      <text class="host" x="1044" y="454">Message Broker</text>
+    </g>
+  </g>
+
+  <!-- Tracking service -->
+  <g>
+    <g class="svc">
+      <rect x="1338" y="128" width="226" height="104" rx="14" fill="#1c1a33" stroke="#a78bfa" stroke-width="4"/>
+      <text class="name" x="1451" y="172" style="font-size: 22px">Tracking Service</text>
+      <text class="host" x="1451" y="206">tracking.trackpilots.com</text>
+      <circle class="dot" cx="1548" cy="140" r="9"/>
+    </g>
+  </g>
+
+  <!-- Icons service -->
+  <g>
+    <g class="svc">
+      <rect x="1338" y="624" width="226" height="104" rx="14" fill="#1d2410" stroke="#84cc16" stroke-width="4"/>
+      <text class="name" x="1451" y="668" style="font-size: 22px">Icons Service</text>
+      <text class="host" x="1451" y="702">icons.trackpilots.com</text>
+      <circle class="dot" cx="1548" cy="636" r="9"/>
+    </g>
+  </g>
+
+  <!-- Activity service -->
+  <g>
+    <g class="svc">
+      <rect x="1338" y="293" width="226" height="104" rx="14" fill="#2a1a20" stroke="#f87171" stroke-width="4"/>
+      <text class="name" x="1451" y="337" style="font-size: 22px">Activity Service</text>
+      <text class="host" x="1451" y="371">activity.trackpilots.com</text>
+      <circle class="dot" cx="1548" cy="305" r="9"/>
+    </g>
+  </g>
+
+  <!-- Screenshot service -->
+  <g>
+    <g class="svc">
+      <rect x="1338" y="459" width="226" height="104" rx="14" fill="#0e2a30" stroke="#22d3ee" stroke-width="4"/>
+      <text class="name" x="1451" y="503" style="font-size: 22px">Screenshot Service</text>
+      <text class="host" x="1451" y="537">screenshot.trackpilots.com</text>
+      <circle class="dot" cx="1548" cy="471" r="9"/>
+    </g>
+  </g>
+
+  <!-- Legend -->
+  <g>
+    <circle cx="60" cy="940" r="9" fill="#a78bfa"/>
+    <text class="legend" x="84" y="947">Tracking</text>
+    <circle cx="445" cy="940" r="9" fill="#f87171"/>
+    <text class="legend" x="469" y="947">Activity</text>
+    <circle cx="830" cy="940" r="9" fill="#22d3ee"/>
+    <text class="legend" x="854" y="947">Screenshot</text>
+    <circle cx="1215" cy="940" r="9" fill="#60a5fa"/>
+    <text class="legend" x="1239" y="947">WS health check</text>
+  </g>
+
+  <!-- Status banner -->
+  <g id="status">
+    <rect x="1404" y="912" width="328" height="56" rx="8"/>
+    <text class="st st-check" x="1568" y="948">Checking WebSocket…</text>
+    <text class="st st-online" x="1568" y="948">Online · Pipeline</text>
+    <text class="st st-offline" x="1568" y="948">Offline · Local DB</text>
+  </g>
+
+  <!-- Centralized database: every service and the GraphQL API write here -->
+  <g>
+    <rect x="1640" y="140" width="110" height="690" rx="16" fill="#1a1d3a" stroke="#818cf8" stroke-width="4"/>
+    <text class="db" x="1695" y="450" font-size="22">Central</text>
+    <text class="db" x="1695" y="482" font-size="22">Database</text>
+    <text class="host" x="1695" y="518">PostgreSQL</text>
+  </g>
+
+  <!-- Web row: browser -> web app -> GraphQL API -> PostgreSQL -->
+  <g class="web">
+    <path id="p-web-app" d="M346 832 L522 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
+    <path id="p-web-gql" d="M752 832 L930 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
+    <path id="p-web-db" d="M1156 832 L1640 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
+  </g>
+  <text class="label" x="880" y="766">GraphQL requests (request / response)</text>
+
+  <g>
+    <rect x="116" y="784" width="230" height="96" rx="14" fill="#1e2632" stroke="#94a3b8" stroke-width="4"/>
+    <text class="name" x="231" y="818">Web Browser</text>
+    <text class="host" x="231" y="854">Admin/Manager/Employee</text>
+  </g>
+
+  <g>
+    <rect x="524" y="784" width="228" height="96" rx="14" fill="#0c2233" stroke="#38bdf8" stroke-width="4"/>
+    <text class="name" x="638" y="826">Web App</text>
+    <text class="host" x="638" y="856">app.trackpilots.com</text>
+  </g>
+
+  <g>
+    <rect x="932" y="784" width="224" height="96" rx="14" fill="#2a1430" stroke="#e879f9" stroke-width="4"/>
+    <text class="name" x="1044" y="826">GraphQL API</text>
+    <text class="host" x="1044" y="856">graphql.trackpilots.com</text>
+  </g>
+
+  <!-- Moving packets are drawn here, on top of everything -->
+  <g id="packets"></g>
+</svg>
+
+<script>
+(() => {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('diagram');
+  const packetLayer = document.getElementById('packets');
+  const byId = (id) => document.getElementById(id);
+
+  const CYCLE = 16000;
+  // Phase start times within one cycle (ms)
+  const TIMELINE = [
+    { phase: 'check', start: 0 },
+    { phase: 'online', start: 3500 },
+    { phase: 'offline', start: 9000 },
+    { phase: 'online', start: 13000 }
+  ];
+  const SPAWN_EVERY = { check: 900, online: 650, offline: 1000 };
+  const COLORS = { tracking: '#a78bfa', activity: '#f87171', screenshot: '#22d3ee', icons: '#84cc16', health: '#60a5fa', local: '#94a3b8' };
+  const EVENT_TYPES = ['tracking', 'activity', 'screenshot', 'icons'];
+  const ROUTES = {
+    tracking: ['p-desk-api', 'p-api-rmq', 'p-rmq-track', 'p-track-db'],
+    activity: ['p-desk-api', 'p-api-rmq', 'p-rmq-act', 'p-act-db'],
+    screenshot: ['p-desk-api', 'p-api-rmq', 'p-rmq-shot', 'p-shot-db'],
+    icons: ['p-desk-api', 'p-api-rmq', 'p-rmq-icons', 'p-icons-db']
+  };
+  const SEGMENT_MS = [600, 600, 800, 400];
+
+  const packets = [];
+
+  function launch(color, segments, r = 8) {
+    const circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('r', r);
+    circle.setAttribute('fill', color);
+    circle.setAttribute('stroke', '#0d1117');
+    circle.setAttribute('stroke-width', 2);
+    packetLayer.appendChild(circle);
+    packets.push({ circle, segments, index: 0, start: performance.now() });
+  }
+
+  function movePackets(now) {
+    for (let k = packets.length - 1; k >= 0; k--) {
+      const p = packets[k];
+      while (p.index < p.segments.length && now - p.start >= p.segments[p.index].dur) {
+        p.start += p.segments[p.index].dur;
+        p.index++;
+      }
+      if (p.index >= p.segments.length) {
+        p.circle.remove();
+        packets.splice(k, 1);
+        continue;
+      }
+      const seg = p.segments[p.index];
+      let t = (now - p.start) / seg.dur;
+      if (seg.reverse) t = 1 - t;
+      const len = seg.el.getTotalLength();
+      const pt = seg.el.getPointAtLength(len * t);
+      p.circle.setAttribute('cx', pt.x);
+      p.circle.setAttribute('cy', pt.y);
+    }
+  }
+
+  function eventSegments(type) {
+    return ROUTES[type].map((id, i) => ({ el: byId(id), dur: SEGMENT_MS[i] }));
+  }
+
+  const WEB_COLOR = '#e2e8f0';
+  const WEB_EVERY = 1400;
+  let lastWebSpawn = 0;
+
+  let timelineIndex = -1;
+  let lastSpawn = 0;
+  let typeCursor = 0;
+  const t0 = performance.now();
+
+  function tick(now) {
+    const elapsed = (now - t0) % CYCLE;
+
+    let index = 0;
+    TIMELINE.forEach((entry, i) => {
+      if (elapsed >= entry.start) index = i;
+    });
+
+    if (index !== timelineIndex) {
+      timelineIndex = index;
+      svg.dataset.phase = TIMELINE[index].phase;
+      lastSpawn = now;
+    }
+
+    const phase = TIMELINE[index].phase;
+    if (now - lastSpawn >= SPAWN_EVERY[phase]) {
+      lastSpawn = now;
+      if (phase === 'check') {
+        const health = byId('p-health');
+        launch(COLORS.health, [
+          { el: health, dur: 600 },
+          { el: health, dur: 600, reverse: true }
+        ], 6);
+      } else if (phase === 'online') {
+        const type = EVENT_TYPES[typeCursor++ % EVENT_TYPES.length];
+        launch(COLORS[type], eventSegments(type));
+      } else {
+        launch(COLORS.local, [{ el: byId('p-desk-local'), dur: 800 }], 7);
+      }
+    }
+
+    // Web requests run in every phase: request goes out, response comes back
+    if (now - lastWebSpawn >= WEB_EVERY) {
+      lastWebSpawn = now;
+      launch(WEB_COLOR, [
+        { el: byId('p-web-app'), dur: 500 },
+        { el: byId('p-web-gql'), dur: 500 },
+        { el: byId('p-web-db'), dur: 500 },
+        { el: byId('p-web-db'), dur: 500, reverse: true },
+        { el: byId('p-web-gql'), dur: 500, reverse: true },
+        { el: byId('p-web-app'), dur: 500, reverse: true }
+      ], 6);
+    }
+
+    movePackets(now);
+    requestAnimationFrame(tick);
+  }
+
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    svg.dataset.phase = 'online';
+  } else {
+    requestAnimationFrame(tick);
+  }
+})();
+</script>
+
+</body>
+</html>
