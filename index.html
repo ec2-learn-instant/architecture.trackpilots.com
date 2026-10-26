@@ -109,6 +109,15 @@
     <marker id="ah-icons" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" fill="#84cc16"/>
     </marker>
+    <marker id="ah-paddle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#60a5fa"/>
+    </marker>
+    <marker id="ah-redis" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#ef4444"/>
+    </marker>
+    <marker id="ah-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#14b8a6"/>
+    </marker>
     <marker id="ah-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
     </marker>
@@ -119,7 +128,6 @@
 
   <!-- Titles -->
   <text class="title" x="880" y="70">TrackPilots  ·  Data Architecture Flow</text>
-  <text class="subtitle" x="880" y="118">Desktop App  →  WS Health Check  →  Online: Pipeline / Offline: Local DB</text>
 
   <!-- Routing lines -->
   <g class="chain">
@@ -278,6 +286,68 @@
     <text class="name" x="1044" y="826">GraphQL API</text>
     <text class="host" x="1044" y="856">graphql.trackpilots.com</text>
   </g>
+
+  <!-- Payments: web app -> Settings Service -> Paddle, Paddle webhook back to Settings -->
+  <g>
+    <path d="M638 784 L638 698" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
+    <text class="label" x="626" y="748" style="text-anchor: end">billing API</text>
+    <path d="M752 636 L930 636" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
+    <text class="label" x="841" y="626">create checkout</text>
+    <path d="M930 668 L752 668" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
+    <text class="label" x="841" y="688">webhook</text>
+    <path d="M720 784 L720 735 L1044 735 L1044 700" stroke="#60a5fa" stroke-width="3" stroke-dasharray="8 8" fill="none" marker-end="url(#ah-paddle)"/>
+    <text class="label" x="1030" y="724" style="text-anchor: end">Paddle checkout overlay (browser UI)</text>
+    <path d="M700 600 L700 580 L1640 580" stroke="#94a3b8" stroke-width="3" fill="none" marker-end="url(#ah-grey)"/>
+  </g>
+
+  <g>
+    <rect x="524" y="600" width="228" height="98" rx="14" fill="#2a1424" stroke="#f472b6" stroke-width="4"/>
+    <text class="name" x="638" y="642" style="font-size: 22px">Settings Service</text>
+    <text class="host" x="638" y="674">settings.trackpilots.com</text>
+  </g>
+
+  <g>
+    <rect x="932" y="600" width="224" height="98" rx="14" fill="#0f1f3a" stroke="#60a5fa" stroke-width="4"/>
+    <text class="name" x="1044" y="642" style="font-size: 22px">Paddle</text>
+    <text class="host" x="1044" y="674">Payment provider</text>
+  </g>
+
+  <!-- Redis cache service reads Postgres -->
+  <g>
+    <path d="M1640 250 L988 250" stroke="#94a3b8" stroke-width="3" stroke-dasharray="8 8" fill="none" marker-end="url(#ah-grey)"/>
+    <text class="label" x="1010" y="270" style="text-anchor: start">reads Postgres</text>
+  </g>
+
+  <g>
+    <rect x="760" y="170" width="228" height="98" rx="14" fill="#2a1212" stroke="#ef4444" stroke-width="4"/>
+    <text class="name" x="874" y="212" style="font-size: 22px">Redis Service</text>
+    <text class="host" x="874" y="244">redis.trackpilots.com</text>
+    <text class="label" x="874" y="292">cache for tracking, screenshot &amp; webhooks</text>
+  </g>
+
+  <!-- Webhooks service: reads only from Redis -->
+  <path d="M988 200 L1038 200" stroke="#14b8a6" stroke-width="3" fill="none" marker-end="url(#ah-teal)"/>
+  <g>
+    <rect x="1040" y="150" width="200" height="86" rx="14" fill="#0c2a29" stroke="#14b8a6" stroke-width="4"/>
+    <text class="name" x="1140" y="186" style="font-size: 20px">Webhooks Service</text>
+    <text class="host" x="1140" y="216" style="font-size: 12px">webhooks.trackpilots.com</text>
+  </g>
+
+  <!-- Event flow: services check plan in Redis, then emit webhook event (paid = full data, free = upgrade required) -->
+  <g>
+    <path d="M1400 128 L1400 96 L874 96 L874 170" stroke="#ef4444" stroke-width="3" stroke-dasharray="8 8" fill="none" marker-end="url(#ah-redis)"/>
+    <text class="label" x="1000" y="88" style="text-anchor: start">plan check</text>
+    <path d="M1338 150 L1290 150 L1290 186 L1240 186" stroke="#14b8a6" stroke-width="3" fill="none" marker-end="url(#ah-teal)"/>
+    <text class="label" x="1100" y="138" style="text-anchor: start">webhook event</text>
+    <path d="M1338 312 L1220 312 L1220 236" stroke="#14b8a6" stroke-width="3" fill="none" marker-end="url(#ah-teal)"/>
+    <path d="M1338 500 L1190 500 L1190 236" stroke="#14b8a6" stroke-width="3" fill="none" marker-end="url(#ah-teal)"/>
+    <text class="label" x="620" y="330" style="text-anchor: start">Paid org: full event data</text>
+    <text class="label" x="620" y="350" style="text-anchor: start">Free org: upgrade required</text>
+  </g>
+
+  <!-- Subtitle drawn last so flow lines pass behind it -->
+  <rect x="566" y="101" width="628" height="24" fill="#0d1117"/>
+  <text class="subtitle" x="880" y="118">Desktop App  →  WS Health Check  →  Online: Pipeline / Offline: Local DB</text>
 
   <!-- Moving packets are drawn here, on top of everything -->
   <g id="packets"></g>
