@@ -25,14 +25,14 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
-  .title { fill: #ffffff; font-size: 40px; font-weight: 700; text-anchor: middle; }
-  .subtitle { fill: #8b949e; font-size: 20px; text-anchor: middle; }
-  .label { fill: #8b949e; font-size: 16px; text-anchor: middle; }
-  .name { fill: #ffffff; font-size: 26px; font-weight: 700; text-anchor: middle; }
-  .host { fill: #94a3b8; font-size: 14px; text-anchor: middle; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .title { fill: #ffffff; font-size: 34px; font-weight: 700; text-anchor: middle; }
+  .subtitle { fill: #8b949e; font-size: 17px; text-anchor: middle; }
+  .label { fill: #8b949e; font-size: 13px; text-anchor: middle; }
+  .name { fill: #ffffff; font-size: 22px; font-weight: 700; text-anchor: middle; }
+  .host { fill: #94a3b8; font-size: 12px; text-anchor: middle; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   .chip { fill: #0d1117; font-size: 17px; font-weight: 700; text-anchor: middle; }
-  .db { fill: #e5e7eb; font-size: 20px; font-weight: 700; text-anchor: middle; }
-  .legend { fill: #c9d1d9; font-size: 20px; }
+  .db { fill: #e5e7eb; font-size: 17px; font-weight: 700; text-anchor: middle; }
+  .legend { fill: #c9d1d9; font-size: 16px; }
 
   .svc { transition: opacity 0.5s ease; }
   [data-phase="offline"] .svc { opacity: 0.45; }
@@ -118,6 +118,12 @@
     <marker id="ah-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" fill="#14b8a6"/>
     </marker>
+    <marker id="ah-backup" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#fbbf24"/>
+    </marker>
+    <marker id="ah-site" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#c084fc"/>
+    </marker>
     <marker id="ah-grey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M0 0 L10 5 L0 10 z" fill="#94a3b8"/>
     </marker>
@@ -126,8 +132,18 @@
   <rect width="1760" height="990" fill="#0d1117"/>
   <rect width="1760" height="990" fill="url(#grid)"/>
 
-  <!-- Titles -->
-  <text class="title" x="880" y="70">TrackPilots  ·  Data Architecture Flow</text>
+  <!-- Header row: title, subtitle and health status on one line -->
+  <text class="title" x="40" y="48" style="text-anchor: start; font-size: 30px">TrackPilots  ·  Data Architecture Flow</text>
+  <text class="subtitle" x="40" y="76" style="text-anchor: start; font-size: 16px">Desktop App  →  WS Health Check  →  Online: Pipeline / Offline: Local DB</text>
+  <g id="status">
+    <rect x="1510" y="18" width="235" height="52" rx="10"/>
+    <text class="st st-check" x="1627" y="50" style="font-size: 17px">Checking WebSocket…</text>
+    <text class="st st-online" x="1627" y="50" style="font-size: 17px">Online · Pipeline</text>
+    <text class="st st-offline" x="1627" y="50" style="font-size: 17px">Offline · Local DB</text>
+  </g>
+
+  <!-- Diagram sits below the header -->
+  <g transform="translate(0,70) scale(0.92)">
 
   <!-- Routing lines -->
   <g class="chain">
@@ -233,46 +249,49 @@
     </g>
   </g>
 
-  <!-- Legend -->
-  <g>
-    <circle cx="60" cy="940" r="9" fill="#a78bfa"/>
-    <text class="legend" x="84" y="947">Tracking</text>
-    <circle cx="445" cy="940" r="9" fill="#f87171"/>
-    <text class="legend" x="469" y="947">Activity</text>
-    <circle cx="830" cy="940" r="9" fill="#22d3ee"/>
-    <text class="legend" x="854" y="947">Screenshot</text>
-    <circle cx="1215" cy="940" r="9" fill="#60a5fa"/>
-    <text class="legend" x="1239" y="947">WS health check</text>
-  </g>
-
-  <!-- Status banner -->
-  <g id="status">
-    <rect x="1404" y="912" width="328" height="56" rx="8"/>
-    <text class="st st-check" x="1568" y="948">Checking WebSocket…</text>
-    <text class="st st-online" x="1568" y="948">Online · Pipeline</text>
-    <text class="st st-offline" x="1568" y="948">Offline · Local DB</text>
-  </g>
-
   <!-- Centralized database: every service and the GraphQL API write here -->
   <g>
-    <rect x="1640" y="140" width="110" height="690" rx="16" fill="#1a1d3a" stroke="#818cf8" stroke-width="4"/>
-    <text class="db" x="1695" y="450" font-size="22">Central</text>
-    <text class="db" x="1695" y="482" font-size="22">Database</text>
-    <text class="host" x="1695" y="518">PostgreSQL</text>
+    <rect x="1640" y="140" width="110" height="560" rx="16" fill="#1a1d3a" stroke="#818cf8" stroke-width="4"/>
+    <text class="db" x="1695" y="396">Central</text>
+    <text class="db" x="1695" y="428">Database</text>
+    <text class="host" x="1695" y="464">PostgreSQL</text>
+  </g>
+
+  <!-- Backups: stacked under the central database; pushes to S3 -->
+  <path d="M1675 700 L1675 730" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#ah-backup)"/>
+  <g>
+    <rect x="1600" y="730" width="150" height="66" rx="10" fill="#2a2010" stroke="#fbbf24" stroke-width="4"/>
+    <text class="name" x="1675" y="757" style="font-size: 15px">Backups Service</text>
+    <text class="host" x="1675" y="780" style="font-size: 10px">backups.trackpilots.com</text>
+  </g>
+  <path d="M1675 796 L1675 830" stroke="#fbbf24" stroke-width="3" fill="none" marker-end="url(#ah-backup)"/>
+  <g>
+    <rect x="1600" y="830" width="150" height="66" rx="10" fill="#1f2937" stroke="#fbbf24" stroke-width="4"/>
+    <text class="name" x="1675" y="858" style="font-size: 16px">Amazon S3</text>
+    <text class="host" x="1675" y="880" style="font-size: 10px">backup bucket</text>
+  </g>
+
+  <!-- Public website lead form -> GraphQL API (createOrganisationRequest) -->
+  <path d="M116 725 L95 725 L95 905 L1040 905 L1040 880" stroke="#c084fc" stroke-width="3" fill="none" marker-end="url(#ah-site)"/>
+  <text class="label" x="380" y="897" style="text-anchor: start">lead form</text>
+  <g>
+    <rect x="116" y="690" width="240" height="70" rx="14" fill="#1e1a2e" stroke="#c084fc" stroke-width="4"/>
+    <text class="name" x="236" y="718" style="font-size: 18px">Website</text>
+    <text class="host" x="236" y="740">trackpilots.com</text>
   </g>
 
   <!-- Web row: browser -> web app -> GraphQL API -> PostgreSQL -->
   <g class="web">
-    <path id="p-web-app" d="M346 832 L522 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
+    <path id="p-web-app" d="M346 945 L440 945 L440 832 L522 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
     <path id="p-web-gql" d="M752 832 L930 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
-    <path id="p-web-db" d="M1156 832 L1640 832" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
+    <path id="p-web-db" d="M1156 832 L1585 832 L1585 690 L1640 690" stroke="#e2e8f0" stroke-width="3" fill="none" marker-end="url(#ah-web)"/>
   </g>
   <text class="label" x="880" y="766">GraphQL requests (request / response)</text>
 
   <g>
-    <rect x="116" y="784" width="230" height="96" rx="14" fill="#1e2632" stroke="#94a3b8" stroke-width="4"/>
-    <text class="name" x="231" y="818">Web Browser</text>
-    <text class="host" x="231" y="854">Admin/Manager/Employee</text>
+    <rect x="116" y="915" width="230" height="60" rx="14" fill="#1e2632" stroke="#94a3b8" stroke-width="4"/>
+    <text class="name" x="231" y="942" style="font-size: 18px">Web Browser</text>
+    <text class="host" x="231" y="962">Admin/Manager/Employee</text>
   </g>
 
   <g>
@@ -315,42 +334,54 @@
   <!-- Redis cache service reads Postgres -->
   <g>
     <path d="M1640 250 L988 250" stroke="#94a3b8" stroke-width="3" stroke-dasharray="8 8" fill="none" marker-end="url(#ah-grey)"/>
-    <text class="label" x="1010" y="270" style="text-anchor: start">reads Postgres</text>
+    <text class="label" x="1010" y="244" style="text-anchor: start">reads Postgres only if cache is empty</text>
   </g>
 
   <g>
     <rect x="760" y="170" width="228" height="98" rx="14" fill="#2a1212" stroke="#ef4444" stroke-width="4"/>
     <text class="name" x="874" y="212" style="font-size: 22px">Redis Service</text>
     <text class="host" x="874" y="244">redis.trackpilots.com</text>
-    <text class="label" x="874" y="292">cache for tracking, screenshot &amp; webhooks</text>
+    <text class="label" x="874" y="296" style="text-anchor: middle">Cached per organisation:</text>
+    <text class="label" x="874" y="312" style="text-anchor: middle">organisationId, plan, plan start &amp; end</text>
+    <text class="label" x="874" y="328" style="text-anchor: middle">webhook IDs, reseller ID</text>
   </g>
 
-  <!-- Webhooks service: reads only from Redis -->
-  <path d="M988 200 L1038 200" stroke="#14b8a6" stroke-width="3" fill="none" marker-end="url(#ah-teal)"/>
+
+  <!-- Webhooks service above the event services; Redis feeds it -->
+  <path d="M760 200 L740 200 L740 67 L1338 67" stroke="#14b8a6" stroke-width="3" fill="none" marker-end="url(#ah-teal)"/>
   <g>
-    <rect x="1040" y="150" width="200" height="86" rx="14" fill="#0c2a29" stroke="#14b8a6" stroke-width="4"/>
-    <text class="name" x="1140" y="186" style="font-size: 20px">Webhooks Service</text>
-    <text class="host" x="1140" y="216" style="font-size: 12px">webhooks.trackpilots.com</text>
+    <rect x="1338" y="30" width="226" height="74" rx="14" fill="#0c2a29" stroke="#14b8a6" stroke-width="4"/>
+    <text class="name" x="1451" y="62" style="font-size: 18px">Webhooks Service</text>
+    <text class="host" x="1451" y="86" style="font-size: 11px">webhooks.trackpilots.com</text>
+  </g>
+
+  <!-- Plan rule applied by the Webhooks server -->
+  <text class="label" x="1320" y="24" style="text-anchor: end">Webhook ID exists: emit event</text>
+  <text class="label" x="1320" y="40" style="text-anchor: end">No webhook ID: skip</text>
+
+  <!-- Light connectors from Tracking, Activity and Screenshot to Webhooks -->
+  <g stroke="#64748b" stroke-width="2" fill="none" stroke-dasharray="6 6">
+    <path d="M1564 67 L1600 67 L1600 489"/>
+    <path d="M1620 116 L1620 481"/>
+    <path d="M1600 158 L1564 158"/>
+    <path d="M1600 323 L1564 323"/>
+    <path d="M1600 489 L1564 489"/>
+    <path d="M1620 150 L1564 150" stroke="#ef4444"/>
+    <path d="M1620 315 L1564 315" stroke="#ef4444"/>
+    <path d="M1620 481 L1564 481" stroke="#ef4444"/>
   </g>
 
   <!-- Event flow: services check plan in Redis, then emit webhook event (paid = full data, free = upgrade required) -->
   <g>
-    <path d="M1400 128 L1400 96 L874 96 L874 170" stroke="#ef4444" stroke-width="3" stroke-dasharray="8 8" fill="none" marker-end="url(#ah-redis)"/>
-    <text class="label" x="1000" y="88" style="text-anchor: start">plan check</text>
-    <path d="M1338 150 L1290 150 L1290 186 L1240 186" stroke="#14b8a6" stroke-width="3" fill="none" marker-end="url(#ah-teal)"/>
-    <text class="label" x="1100" y="138" style="text-anchor: start">webhook event</text>
-    <path d="M1338 312 L1220 312 L1220 236" stroke="#14b8a6" stroke-width="3" fill="none" marker-end="url(#ah-teal)"/>
-    <path d="M1338 500 L1190 500 L1190 236" stroke="#14b8a6" stroke-width="3" fill="none" marker-end="url(#ah-teal)"/>
-    <text class="label" x="620" y="330" style="text-anchor: start">Paid org: full event data</text>
-    <text class="label" x="620" y="350" style="text-anchor: start">Free org: upgrade required</text>
+    <path d="M1620 116 L874 116 L874 170" stroke="#ef4444" stroke-width="3" stroke-dasharray="8 8" fill="none" marker-end="url(#ah-redis)"/>
+    <text class="label" x="1000" y="110" style="text-anchor: start">webhook ID check</text>
   </g>
 
-  <!-- Subtitle drawn last so flow lines pass behind it -->
-  <rect x="566" y="101" width="628" height="24" fill="#0d1117"/>
-  <text class="subtitle" x="880" y="118">Desktop App  →  WS Health Check  →  Online: Pipeline / Offline: Local DB</text>
 
   <!-- Moving packets are drawn here, on top of everything -->
   <g id="packets"></g>
+  </g>
+
 </svg>
 
 <script>
